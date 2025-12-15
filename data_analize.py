@@ -149,8 +149,10 @@ def create_green_table_image(correlation_matrix, velocities, displacements,
     print(f"\nTabela com precisão float64 salva como: {filename}")
 
 if __name__ == '__main__':
-    df = pd.read_csv('test.csv')
+    df = pd.read_csv('dataset_processed.csv')
+    df = df.dropna()
     
+    """
     pitch_velocities = ['pitch_v', 'pitch_ema_1', 'pitch_ema_2', 'pitch_ema_3']
     pitch_displacements = ['pitch_d_1', 'pitch_d_2', 'pitch_d_3', 'pitch_d_4', 'pitch_d_5']
 
@@ -163,3 +165,8 @@ if __name__ == '__main__':
             displacements=pitch_displacements,
             filename='correlacao_pitch.png'
         )
+    """
+    new_df = df[['playback_time', 'pitch', 'yaw', 'pitch_v', 'yaw_v', 'pitch_pred_3', 'yaw_pred_3']].copy()
+    print(new_df.head())
+    print(df.info())
+

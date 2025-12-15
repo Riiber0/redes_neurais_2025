@@ -16,6 +16,9 @@ def get_ema(ema, v, alpha):
 datasets = os.listdir(AGREGATED_DATASET_PATH)
 datasets.remove('readMe.txt')
 
+for i in range(33, 60):
+    datasets.remove(str(i) + '.txt')
+
 print(datasets)
 
 col_names = ['v_id', 'u_id', 'pitch', 'yaw', 'pitch_v', 'yaw_v', 
