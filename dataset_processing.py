@@ -4,6 +4,7 @@ import os
 
 AGREGATED_DATASET_PATH='./AggregatedDataset/'
 
+
 def get_angular_velocity(p1, p2):
     delta_p = p2 - p1
     speed = delta_p/0.1
@@ -16,12 +17,7 @@ def get_ema(ema, v, alpha):
 datasets = os.listdir(AGREGATED_DATASET_PATH)
 datasets.remove('readMe.txt')
 
-for i in range(33, 60):
-    datasets.remove(str(i) + '.txt')
-
-print(datasets)
-
-col_names = ['v_id', 'u_id', 'pitch', 'yaw', 'pitch_v', 'yaw_v', 
+col_names = ['v_id', 'u_id', 'playback_time', 'pitch', 'yaw', 'pitch_v', 'yaw_v', 
              'pitch_ema_1', 'yaw_ema_1', 'pitch_ema_2', 'yaw_ema_2', 'pitch_ema_3', 'yaw_ema_3',
              'pitch_pred_1', 'yaw_pred_1', 'pitch_pred_2', 'yaw_pred_2', 'pitch_pred_3', 
              'yaw_pred_3', 'pitch_pred_4', 'yaw_pred_4', 'pitch_pred_5', 'yaw_pred_5',
@@ -29,6 +25,8 @@ col_names = ['v_id', 'u_id', 'pitch', 'yaw', 'pitch_v', 'yaw_v',
              'yaw_d_3', 'pitch_d_4', 'yaw_d_4', 'pitch_d_5', 'yaw_d_5']
 
 final_df = pd.DataFrame(columns=col_names)
+sum_files = len(datasets)
+progress = 0
 
 for file in datasets:
     print(file)
@@ -41,9 +39,10 @@ for file in datasets:
 
     for r in range(0, len(dataset), 2):
         user_id += 1
-        for c in range(0, dataset.shape[1]-1):
+        for c in range(0, 599):
             pitch = np.float64(dataset.iloc[r, c])
             yaw = np.float64(dataset.iloc[r+1, c])
+            playback_time = dataset.columns[c]
 
             future_pitch = np.float64(dataset.iloc[r, c+1])
             future_yaw = np.float64(dataset.iloc[r+1, c+1])
@@ -66,7 +65,7 @@ for file in datasets:
             yaw_d = []
 
             for i in range(5, 26, 5):
-                if c+i < len(dataset):
+                if c+i < 600:
                     pitch_pred_t = np.float64(dataset.iloc[r, c+i])
                     yaw_pred_t = np.float64(dataset.iloc[r+1, c+i])
 
@@ -83,15 +82,21 @@ for file in datasets:
                     pitch_d.append(0)
                     yaw_d.append(0)
 
-            final_df.loc[len(final_df)] = [video_id, user_id, pitch, yaw, pitch_v, yaw_v, 
+            final_df.loc[len(final_df)] = [video_id, user_id, playback_time, pitch, yaw, pitch_v, yaw_v, 
                                            pitch_ema_1, yaw_ema_1, pitch_ema_2, yaw_ema_2, pitch_ema_3, yaw_ema_3,
                                            pitch_pred[0], yaw_pred[0], pitch_pred[1], yaw_pred[1], pitch_pred[2], 
                                            yaw_pred[2], pitch_pred[3], yaw_pred[3], pitch_pred[4], yaw_pred[4],
                                            pitch_d[0], yaw_d[0], pitch_d[1], yaw_d[1], pitch_d[2], 
                                            yaw_d[2], pitch_d[3], yaw_d[3], pitch_d[4], yaw_d[4]]
             
-    print(final_df)
+    #print(final_df)
+    progress += 1
+    print(f"progress: ({progress}/{sum_files})")
 
+    #new_df = final_df[['playback_time', 'pitch', 'yaw', 'pitch_pred_4', 'yaw_pred_4']].copy()
+    #print(new_df)
     #os._exit(0)
 
 final_df.to_csv('dataset_processed.csv', index=False)
+print(final_df)
+
