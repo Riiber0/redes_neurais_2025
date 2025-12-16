@@ -4,13 +4,48 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Input, Conv1D, GRU, MaxPooling1D, Dropout, TimeDistributed, Flatten, Dense, Bidirectional, BatchNormalization
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint, CSVLogger
 import matplotlib.pyplot as plt
+from abc import ABC, abstractmethod
 
+MODELS_PATH='./models/'
 
-class CNN_GRU:
-    def __init__(self):
+class convModel():
+    def __init__(self, name):
         self.model = None
+        self.name = name
+
+    @abstractmethod
+    def create_regression_model(self, input_shape, dropout=0.15, max_pooling=2):
+        pass
+
+    def compile_model(self):
+        self.model.compile(optimizer=keras.optimizers.Adam(), loss='mse', 
+                           metrics=['mae', keras.metrics.RootMeanSquaredError(name='rmse')])
+
+    def model_summary(self):
+        self.model.summary()
+
+    def train_model(self, x_train, y_train, x_val, y_val, b_size):
+        callbacks = [
+                EarlyStopping(patience=10, restore_best_weights=True, verbose=1),
+                ReduceLROnPlateau(patience=10, verbose=1),
+                ModelCheckpoint(MODELS_PATH+self.name+'_model.h5',save_best_only=True, verbose=1),
+                CSVLogger(MODELS_PATH+self.name+'_training.log', separator=',', append=False)
+        ]
+
+        hist = self.model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=10, 
+                              batch_size=b_size, 
+                              callbacks=callbacks, verbose=1)
+
+        return hist
+
+    def test_model(self, x_test, y_test):
+        return self.model.evaluate(x_test, y_test)
+
+class CNN_GRU(convModel):
+    def __init__(self, name):
+        super().__init__(name)
 
     def create_regression_model(self, input_shape, dropout=0.15, max_pooling=2):
         input_layer = Input(shape=input_shape)
@@ -41,34 +76,34 @@ class CNN_GRU:
         d5 = Dropout(dropout)(d5)
 
         #Camada de saida
-        output_layer = Dense(2)(d5)
+        output_layer = Dense(4)(d5)
 
-        model = Model(inputs=input_layer, outputs=output_layer, name="CNN_GRU_regression")
+        model = Model(inputs=input_layer, outputs=output_layer, name=self.name)
 
         self.model = model
 
-    def compile_model(self):
-        self.model.compile(optimizer=keras.optimizers.Adam(), loss='mse', 
-                           metrics=['mae', keras.metrics.RootMeanSquaredError(name='rmse')])
 
-    def model_summary(self):
-        self.model.summary()
+class baseModel(convModel):
+    def __init__(self, name):
+        super().__init__(name)
 
-    def train_model(self, x_train, y_train, x_val, y_val, b_size):
-        callbacks = [
-                EarlyStopping(patience=10, restore_best_weights=True, verbose=1),
-                ReduceLROnPlateau(patience=10, verbose=1),
-                ModelCheckpoint('best_model.h5',save_best_only=True, verbose=1)
-        ]
+    def create_regression_model(self, input_shape, dropout=0.15, max_pooling=2):
+        input_layer = Input(shape=input_shape)
 
-        print('train')
-        hist = self.model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=10, 
-                              batch_size=b_size, 
-                              callbacks=callbacks, verbose=1)
+        #Primeira camada convolucional
+        c1 = Conv1D(64, 3, activation='relu', padding='same')(input_layer)
+        c1 = Conv1D(64, 3, activation='relu', padding='same')(c1)
+        c1 = MaxPooling1D(max_pooling)(c1)
+        c1 = Dropout(dropout)(c1)
 
-        return hist
+        #Bloco de camada densa para regressao
+        d2 = Dense(64, activation='relu')(c1)
+        d2 = Dropout(dropout)(d2)
 
-    def test_model(self, x_test, y_test):
-        return self.model.evaluate(x_test, y_test)
+        #Camada de saida
+        output_layer = Dense(4)(d2)
 
+        model = Model(inputs=input_layer, outputs=output_layer, name=self.name)
+
+        self.model = model
 
