@@ -18,7 +18,7 @@ class CNN_GRU:
         #Bloco de duas Camadas CNN
         #Primeira camada convolucional
         c1 = Conv1D(64, 3, activation='relu', padding='same')(input_layer)
-        c1 = Conv1D(64, 3, activation='relu', padding='same')(x)
+        c1 = Conv1D(64, 3, activation='relu', padding='same')(c1)
         c1 = MaxPooling1D(max_pooling)(c1)
         c1 = Dropout(dropout)(c1)
 
@@ -43,26 +43,32 @@ class CNN_GRU:
         #Camada de saida
         output_layer = Dense(2)(d5)
 
-        model = Model(Inputs=input_layer, outputs=output_layer, name="CNN_GRU_regression")
+        model = Model(inputs=input_layer, outputs=output_layer, name="CNN_GRU_regression")
 
         self.model = model
 
     def compile_model(self):
-        self.model.compile(optmizer=keras.optmizer.Adam, loss='mse', 
-                           metrics=[['mae', keras.metrics.RootMeanSquaredError(name='rmse')]])
+        self.model.compile(optimizer=keras.optimizers.Adam(), loss='mse', 
+                           metrics=['mae', keras.metrics.RootMeanSquaredError(name='rmse')])
 
     def model_summary(self):
         self.model.summary()
 
-    def train_model(self, x_train, y_train, b_size):
+    def train_model(self, x_train, y_train, x_val, y_val, b_size):
         callbacks = [
-                EarlyStopping(patience=10, restore_bst_weights=True),
-                ReduceLROnPlateau(patience=10),
-                ModelCheckpoint('best_model.h5',save_best_only=True)
+                EarlyStopping(patience=10, restore_best_weights=True, verbose=1),
+                ReduceLROnPlateau(patience=10, verbose=1),
+                ModelCheckpoint('best_model.h5',save_best_only=True, verbose=1)
         ]
 
-        hist = self.model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=50, 
+        print('train')
+        hist = self.model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=10, 
                               batch_size=b_size, 
                               callbacks=callbacks, verbose=1)
+
+        return hist
+
+    def test_model(self, x_test, y_test):
+        return self.model.evaluate(x_test, y_test)
 
 
