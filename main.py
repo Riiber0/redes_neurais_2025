@@ -138,6 +138,15 @@ if __name__ == '__main__':
         test_df = pd.read_csv('test_data.csv')
         test_all(test_df)
 
+    elif sys.argv[1] == 'view':
+        m = CNN_GRU('CNN_GRU.png')
+        m.create_regression_model([512, 17])
+        m.plot_model()
+
+        m = baseModel('base.png')
+        m.create_regression_model([512, 17])
+        m.plot_model()
+
 
 
 

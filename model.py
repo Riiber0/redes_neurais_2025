@@ -42,6 +42,10 @@ class convModel():
 
     def test_model(self, x_test, y_test):
         return self.model.evaluate(x_test, y_test)
+    
+    def plot_model(self):
+        keras.utils.plot_model(self.model, to_file=self.name
+                               )
 
 class CNN_GRU(convModel):
     def __init__(self, name):
