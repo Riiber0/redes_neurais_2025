@@ -5,7 +5,7 @@ from tensorflow.keras.models import load_model
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-from utils import prepare_data, split_dataset, create_temporal_sequences
+from utils import prepare_data, split_dataset, create_temporal_sequences, create_detailed_temporal_sequences,get_viewport_tiles
 from model import CNN_GRU, baseModel
 import os, sys
 import glob
@@ -73,11 +73,9 @@ def create_all(train_df, val_df):
         train_data = make_data(train_df, i['p_target'], i['y_target'])
         val_data = make_data(val_df, i['p_target'], i['y_target'])
 
-        """
         x_train, y_train = create_temporal_sequences(train_data, i['pred_time'], True)
         x_val, y_val = create_temporal_sequences(val_data, i['pred_time'], True)
         create_model('CNN_GRU', f"CNN_GRU_{i['target_id']}", x_train, y_train, x_val, y_val)
-        """
 
         x_train, y_train = create_temporal_sequences(train_data, i['pred_time'], False)
         x_val, y_val = create_temporal_sequences(val_data, i['pred_time'], False)
@@ -116,7 +114,42 @@ def test_all(test_df):
         test_data = make_data(test_df, p_target, y_target)
 
         x_test, y_test = create_temporal_sequences(test_data, pred_time, use_v)
+        print(x_test[0])
+        return
         test_model(model, x_test, y_test)
+
+def test_tile_miss(model_path, test_data):
+    m = load_model(model_path)
+
+    print(test_data[0]['sequence'])
+    a = m.predict(test_data[0]['sequence'])
+    print(a)
+
+def test_tiles_all(test_df):
+
+    models = glob.glob(MODELS_PATH+'*.h5')
+    print(models)
+
+    for model in models:
+        if 'CNN_GRU' in model:
+            target_id = model.split('_')[2]
+            p_target = 'pitch_pred_' + target_id
+            y_target = 'yaw_pred_' + target_id
+            target_id = int(target_id)
+            pred_time = 5 * target_id
+            use_v = True
+        else:
+            target_id = model.split('_')[1]
+            p_target = 'pitch_pred_' + target_id
+            y_target = 'yaw_pred_' + target_id
+            target_id = int(target_id)
+            pred_time = 5 * target_id
+            use_v = False
+
+        test_data = make_data(test_df, p_target, y_target)
+
+        test_data = create_detailed_temporal_sequences(test_data, pred_time, use_v)
+        test_tile_miss(model, test_data)
 
 if __name__ == '__main__':
     np.random.seed(9000)
@@ -137,6 +170,12 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'test':
         test_df = pd.read_csv('test_data.csv')
         test_all(test_df)
+
+    elif sys.argv[1] == 'tiles':
+        print(get_viewport_tiles(0,0))
+        test_df = pd.read_csv('test_data.csv')
+        test_tiles_all(test_df)
+
 
 
 

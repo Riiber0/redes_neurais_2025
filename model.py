@@ -96,12 +96,15 @@ class baseModel(convModel):
         c1 = MaxPooling1D(max_pooling)(c1)
         c1 = Dropout(dropout)(c1)
 
+        #Flatten
+        f2 = Flatten()(c1)
+
         #Bloco de camada densa para regressao
-        d2 = Dense(64, activation='relu')(c1)
-        d2 = Dropout(dropout)(d2)
+        d3 = Dense(64, activation='relu')(f2)
+        d3 = Dropout(dropout)(d3)
 
         #Camada de saida
-        output_layer = Dense(4)(d2)
+        output_layer = Dense(4)(d3)
 
         model = Model(inputs=input_layer, outputs=output_layer, name=self.name)
 
